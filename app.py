@@ -6,12 +6,15 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from pymongo import MongoClient
 from werkzeug.utils import secure_filename
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import os
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import re
+import jwt
+import json
+from functools import wraps
 
 from flask_mail import Mail, Message
 from flask_socketio import SocketIO, join_room, leave_room, emit
@@ -25,9 +28,33 @@ CORS(app)
 mail = Mail(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET', 'super-secret-advier-key-2026')
+
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        if 'Authorization' in request.headers:
+            auth_header = request.headers['Authorization']
+            if auth_header.startswith('Bearer '):
+                token = auth_header.split(" ")[1]
+        
+        if not token:
+            return jsonify({'message': 'Authentication token is missing!'}), 401
+        
+        try:
+            jwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            return jsonify({'message': 'Authentication token has expired!'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'message': 'Invalid authentication token!'}), 401
+        
+        return f(*args, **kwargs)
+    return decorated
+
 @app.route("/")
 def home():
-    return send_from_directory("static", "1.user_login.html")
+    return send_from_directory("static", "index.html")
 
 @app.route("/<path:filename>")
 def serve_static(filename):
@@ -130,9 +157,16 @@ def login():
             print("User not found in either collection")  # Debug log
 
     if user:
+        token = jwt.encode({
+            'email': user.get('email'),
+            'role': user.get('role'),
+            'exp': datetime.now(timezone.utc) + timedelta(hours=24)
+        }, app.config['JWT_SECRET_KEY'], algorithm='HS256')
+        
         full_name = f"{user.get('firstName', '')} {user.get('lastName', '')}".strip()
         return jsonify({
             'message': 'Login successful',
+            'token': token,
             'role': user.get('role'),
             'name': full_name,
             'email': user.get('email')
@@ -142,6 +176,7 @@ def login():
 
 # Update Profile
 @app.route('/updateProfile', methods=['POST'])
+@token_required
 def update_profile():
     email = request.form.get('email')
     if not email:
@@ -149,7 +184,19 @@ def update_profile():
 
     achievements = request.form.get('achievements')
     experience = request.form.get('experience')
-    specialization = request.form.get('specialization')
+    specialization_data = request.form.get('specialization')
+
+    try:
+        if specialization_data and (specialization_data.strip().startswith('[') or specialization_data.strip().startswith('{')):
+            specialization = json.loads(specialization_data)
+        else:
+            if specialization_data:
+                specialization = [s.strip() for s in specialization_data.split(',') if s.strip()]
+            else:
+                specialization = []
+    except Exception as e:
+        print(f"Error parsing specialization: {e}")
+        specialization = specialization_data
 
     user_folder = os.path.join(UPLOAD_FOLDER, secure_filename(email))
     os.makedirs(user_folder, exist_ok=True)
@@ -193,12 +240,35 @@ def update_profile():
 
 # Get Profile
 @app.route('/getProfile/<email>', methods=['GET'])
+@token_required
 def get_profile(email):
     profile = profiles.find_one({'email': email}, {'_id': 0})
-    if not profile:
-        return jsonify({'message': 'Profile not found'}), 404
-
     user = users.find_one({'email': email})
+    
+    if not profile and not user:
+        return jsonify({'message': 'Profile not found'}), 404
+        
+    if not profile:
+        profile = {
+            'email': email,
+            'achievements': '',
+            'experience': '',
+            'specialization': '',
+            'specializations': [],
+            'certifications': [],
+            'graduationCertificates': [],
+            'profilePic': ''
+        }
+
+    # Format specialization field for compatibility
+    spec_val = profile.get('specialization', '')
+    if isinstance(spec_val, list):
+        profile['specializations'] = spec_val
+        profile['specialization'] = ", ".join(spec_val)
+    else:
+        profile['specializations'] = [spec_val] if spec_val else []
+        profile['specialization'] = spec_val
+
     if user:
         profile['firstName'] = user.get('firstName', '')
         profile['lastName'] = user.get('lastName', '')
@@ -235,32 +305,54 @@ def serve_chat_files(filename):
 
 # Get Lawyers
 @app.route('/getLawyers', methods=['GET'])
+@token_required
 def get_lawyers():
     lawyers = users.find({'role': 'lawyer'})
     results = []
     for lawyer in lawyers:
         email = lawyer.get('email')
         profile = profiles.find_one({'email': email})
+        
+        specialization = 'Not specified'
+        specializations = []
+        profile_pic_url = 'default.jpg'
+        avg_rating = 0
+        
         if profile:
+            spec_val = profile.get('specialization')
+            if isinstance(spec_val, list):
+                specializations = spec_val
+                specialization = ", ".join(spec_val)
+            elif spec_val:
+                specializations = [spec_val]
+                specialization = spec_val
+            else:
+                specialization = 'Not specified'
+                specializations = []
+
             profile_pic_path = profile.get('profilePic')
             if profile_pic_path:
-                relative_path = os.path.relpath(profile_pic_path, UPLOAD_FOLDER).replace("\\", "/")
-                profile_pic_url = f"{request.host_url}uploads/{relative_path}"
-            else:
-                profile_pic_url = "default.jpg"
+                try:
+                    relative_path = os.path.relpath(profile_pic_path, UPLOAD_FOLDER).replace("\\", "/")
+                    profile_pic_url = f"{request.host_url}uploads/{relative_path}"
+                except:
+                    profile_pic_url = "default.jpg"
+            avg_rating = profile.get('averageRating', 0)
 
-            results.append({
-                'firstName': lawyer.get('firstName', ''),
-                'lastName': lawyer.get('lastName', ''),
-                'email': email,
-                'specialization': profile.get('specialization', 'Not specified'),
-                'profilePic': profile_pic_url,
-                'averageRating': profile.get('averageRating', 0)
-            })
+        results.append({
+            'firstName': lawyer.get('firstName', ''),
+            'lastName': lawyer.get('lastName', ''),
+            'email': email,
+            'specialization': specialization,
+            'specializations': specializations,
+            'profilePic': profile_pic_url,
+            'averageRating': avg_rating
+        })
     return jsonify(results), 200
 
 # Schedule Appointment (Accepts FormData)
 @app.route('/scheduleAppointment', methods=['POST'])
+@token_required
 def schedule_appointment():
     lawyer_email = request.form.get('lawyerEmail')
     client_email = request.form.get('clientEmail')
@@ -303,6 +395,7 @@ def schedule_appointment():
     return jsonify({'success': True, 'message': 'Appointment scheduled successfully'}), 200
 
 @app.route('/api/lawyer/appointments', methods=['GET'])
+@token_required
 def get_lawyer_appointments():
     lawyer_email = request.args.get('lawyerEmail')
     if not lawyer_email:
@@ -319,6 +412,7 @@ def get_lawyer_appointments():
     return jsonify(appointments), 200
 
 @app.route('/api/client/appointments', methods=['GET'])
+@token_required
 def get_client_appointments():
     client_email = request.args.get('clientEmail')
     appointments = list(appointments_col.find({'client_email': client_email}))
@@ -328,6 +422,7 @@ def get_client_appointments():
 
 
 @app.route('/api/lawyer/appointment/status', methods=['POST'])
+@token_required
 def update_appointment_status():
     data = request.get_json()
     appointment_id = data.get('appointmentId')
@@ -422,6 +517,7 @@ def update_appointment_status():
     return jsonify({'message': f'Appointment {status.lower()}.'}), 200
 
 @app.route('/api/client/details', methods=['GET'])
+@token_required
 def get_client_details():
     client_email = request.args.get('clientEmail')
     client = clients.find_one({'email': client_email}, {'_id': 0, 'password': 0})
@@ -429,8 +525,27 @@ def get_client_details():
         return jsonify({'message': 'Client not found'}), 404
     return jsonify(client), 200
 
+@app.route('/api/client/appointment/cancel', methods=['POST'])
+@token_required
+def cancel_appointment():
+    try:
+        data = request.get_json()
+        appointment_id = data.get('appointmentId')
+        if not appointment_id:
+            return jsonify({'message': 'Appointment ID is required'}), 400
+
+        result = appointments_col.delete_one({'_id': ObjectId(appointment_id)})
+        if result.deleted_count == 0:
+            return jsonify({'message': 'Appointment not found'}), 404
+
+        return jsonify({'message': 'Appointment cancelled successfully'}), 200
+    except Exception as e:
+        print(f"Error in cancel_appointment: {e}")
+        return jsonify({'message': 'Internal Server Error'}), 500
+
 # --- Rating System ---
 @app.route('/api/lawyer/rate', methods=['POST'])
+@token_required
 def rate_lawyer():
     data = request.get_json()
     lawyer_email = data.get('lawyerEmail')
@@ -482,6 +597,7 @@ def rate_lawyer():
 
 # --- Chat System ---
 @app.route('/api/chat/upload', methods=['POST'])
+@token_required
 def upload_chat_file():
     room = request.form.get('room')
     file = request.files.get('file')
@@ -499,6 +615,7 @@ def upload_chat_file():
     return jsonify({'url': file_url, 'filename': file.filename}), 200
 
 @app.route('/api/messages/<room>', methods=['GET'])
+@token_required
 def get_messages(room):
     msgs = list(messages_col.find({'room': room}).sort('timestamp', 1))
     for m in msgs:
@@ -511,6 +628,13 @@ def handle_join_room(data):
     if room:
         join_room(room)
         print(f"User joined room: {room}")
+
+@socketio.on('leave_room')
+def handle_leave_room(data):
+    room = data.get('room')
+    if room:
+        leave_room(room)
+        print(f"User left room: {room}")
 
 @socketio.on('send_message')
 def handle_message(data):
@@ -534,6 +658,7 @@ def handle_message(data):
         messages_col.insert_one(msg_doc)
         
         emit('receive_message', {
+            'room': room,
             'message': message,
             'sender': sender,
             'senderEmail': sender_email,

@@ -1,3 +1,48 @@
+(() => {
+    const role = localStorage.getItem('role');
+    const userEmail = localStorage.getItem('userEmail');
+    const currentPage = window.location.pathname.split('/').pop();
+    
+    const isPublicPage = !currentPage || currentPage === '1.user_login.html' || currentPage === '2.lawyer_reg.html';
+
+    const lawyerPages = [
+        '3.lawyer_dashboard.html',
+        '4.lawyer_profile.html',
+        '5.view_profile.html',
+        '6.lawyer_clientmg.html',
+        '7.lawyer_message.html',
+        '7.1.lawyer_message.html',
+        '8.lawyer_appointment.html',
+        '9.manage_cases.html'
+    ];
+
+    const clientPages = [
+        'cdash.html',
+        'clawyers.html',
+        'cappointments.html',
+        'cappointment.html',
+        'clawyersprofile.html',
+        'cmessage.html',
+        'cprofile.html',
+        'cbill.html'
+    ];
+
+    if (!isPublicPage) {
+        if (!userEmail || !role) {
+            window.location.href = '1.user_login.html';
+            return;
+        }
+        if (role === 'client' && lawyerPages.includes(currentPage)) {
+            window.location.href = 'cdash.html';
+            return;
+        }
+        if (role === 'lawyer' && clientPages.includes(currentPage)) {
+            window.location.href = '3.lawyer_dashboard.html';
+            return;
+        }
+    }
+})();
+
 document.addEventListener("DOMContentLoaded", () => {
     const role = localStorage.getItem('role');
     const userName = localStorage.getItem('userName') || 'User';

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="auth.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Messages - Advier ⚖️</title>
@@ -341,7 +342,14 @@
                 window.location.href = '1.user_login.html';
                 return;
             }
-            loadLawyers();
+            await loadLawyers();
+            
+            // Auto-select chat if query parameter is present
+            const params = new URLSearchParams(window.location.search);
+            const queryLawyerEmail = params.get('lawyer_email');
+            if (queryLawyerEmail) {
+                selectChat(queryLawyerEmail, queryLawyerEmail, null);
+            }
         });
 
         async function loadLawyers() {
@@ -385,12 +393,29 @@
 
         function selectChat(lawyerEmail, lawyerName, element) {
             document.querySelectorAll('.conversation-item').forEach(el => el.classList.remove('active'));
-            if(element) element.classList.add('active');
+            if(element) {
+                element.classList.add('active');
+            } else {
+                const items = document.querySelectorAll('.conversation-item');
+                items.forEach(item => {
+                    const smallEl = item.querySelector('small');
+                    if (smallEl && smallEl.textContent.trim() === lawyerEmail) {
+                        item.classList.add('active');
+                    }
+                });
+            }
 
             currentLawyerEmail = lawyerEmail;
             
             const emails = [clientEmail, lawyerEmail].sort();
-            currentRoom = `room_${emails[0]}_${emails[1]}`;
+            const newRoom = `room_${emails[0]}_${emails[1]}`;
+
+            // Leave the old room
+            if (currentRoom && currentRoom !== newRoom) {
+                socket.emit('leave_room', { room: currentRoom });
+            }
+
+            currentRoom = newRoom;
 
             document.getElementById('emptyChatPanel').style.display = 'none';
             document.getElementById('chatPanel').style.display = 'flex';
@@ -433,6 +458,9 @@
         }
 
         function displayMessage(data) {
+            // Check if this message is for the current room
+            if (data.room && data.room !== currentRoom) return;
+
             // Very simple deduplication via timestamp+message combo
             const msgId = data.timestamp + (data.message || data.fileUrl);
             if (renderedMessageIds.has(msgId)) return;

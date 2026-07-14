@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advier ⚖️ - Secure Legal Consultations Simplified</title>
+    <meta name="description" content="Advier connects you with verified legal advocates for secure, seamless, and online consultations. Book appointments and consult with confidence.">
+    
+    <!-- Fonts and Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #0f172a;       /* Slate 900 */
+            --primary-light: #1e293b; /* Slate 800 */
+            --accent-gold: #fbbf24;   /* Amber 400 */
+            --accent-emerald: #10b981;/* Emerald 500 */
+            --text-main: #f8fafc;     /* Slate 50 */
+            --text-muted: #94a3b8;    /* Slate 400 */
+            --bg-light: #f1f5f9;      /* Slate 100 */
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--primary);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        /* Background Effects */
+        .bg-glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(251, 191, 36, 0.08) 0%, rgba(15, 23, 42, 0) 70%);
+            top: -10%;
+            right: -10%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .bg-glow-2 {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.05) 0%, rgba(15, 23, 42, 0) 70%);
+            bottom: 20%;
+            left: -10%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Navigation */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem 5%;
+            position: relative;
+            z-index: 10;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.8rem;
+            font-weight: 800;
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-main);
+            text-decoration: none;
+        }
+
+        .logo i {
+            color: var(--accent-gold);
+            text-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.8rem 1.8rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transition);
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-main);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+            transform: translateY(-2px);
+        }
+
+        .btn-gold {
+            background: var(--accent-gold);
+            color: var(--primary);
+            box-shadow: 0 4px 20px rgba(251, 191, 36, 0.3);
+        }
+
+        .btn-gold:hover {
+            background: #fcd34d;
+            box-shadow: 0 6px 25px rgba(251, 191, 36, 0.5);
+            transform: translateY(-2px);
+        }
+
+        /* Hero Section */
+        .hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 6rem 5% 4rem 5%;
+            position: relative;
+            z-index: 5;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .hero-badge {
+            background: rgba(251, 191, 36, 0.1);
+            color: var(--accent-gold);
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            animation: fadeIn 1s ease;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            line-height: 1.15;
+            margin-bottom: 1.5rem;
+            color: #ffffff;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, #fcd34d 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 750px;
+            margin-bottom: 3rem;
+        }
+
+        /* Portals / Cards Section */
+        .portals-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2.5rem;
+            padding: 0 5% 6rem 5%;
+            max-width: 1100px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 5;
+        }
+
+        @media (min-width: 768px) {
+            .portals-container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .portal-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 3rem 2.5rem;
+            text-align: left;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(12px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .portal-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 4px;
+            background: transparent;
+            transition: var(--transition);
+        }
+
+        .portal-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .portal-card.client:hover::before {
+            background: var(--accent-emerald);
+        }
+
+        .portal-card.lawyer:hover::before {
+            background: var(--accent-gold);
+        }
+
+        .portal-card i.main-icon {
+            font-size: 3rem;
+            margin-bottom: 2rem;
+        }
+
+        .portal-card.client i.main-icon {
+            color: var(--accent-emerald);
+            text-shadow: 0 0 25px rgba(16, 185, 129, 0.3);
+        }
+
+        .portal-card.lawyer i.main-icon {
+            color: var(--accent-gold);
+            text-shadow: 0 0 25px rgba(251, 191, 36, 0.3);
+        }
+
+        .portal-card h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: #ffffff;
+        }
+
+        .portal-card p {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            font-size: 1.05rem;
+            flex-grow: 1;
+        }
+
+        .portal-card ul {
+            list-style: none;
+            margin-bottom: 2.5rem;
+        }
+
+        .portal-card ul li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            color: #e2e8f0;
+            font-size: 0.95rem;
+        }
+
+        .portal-card ul li i {
+            font-size: 0.9rem;
+        }
+
+        .portal-card.client ul li i {
+            color: var(--accent-emerald);
+        }
+
+        .portal-card.lawyer ul li i {
+            color: var(--accent-gold);
+        }
+
+        .portal-card .btn {
+            width: 100%;
+        }
+
+        /* Features/Resolution Section */
+        .resolution-section {
+            background-color: var(--primary-light);
+            padding: 8rem 5%;
+            position: relative;
+            z-index: 5;
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 5rem auto;
+        }
+
+        .section-header h2 {
+            font-size: 2.6rem;
+            margin-bottom: 1.2rem;
+            color: #ffffff;
+        }
+
+        .section-header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .resolution-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 3rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        @media (min-width: 768px) {
+            .resolution-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .res-card {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2.5rem 2rem;
+            transition: var(--transition);
+        }
+
+        .res-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(251, 191, 36, 0.2);
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        .res-card .icon-wrapper {
+            width: 60px;
+            height: 60px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.03);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1.8rem;
+            color: var(--accent-gold);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .res-card.trust .icon-wrapper {
+            color: var(--accent-gold);
+        }
+
+        .res-card.schedule .icon-wrapper {
+            color: #3b82f6; /* Blue */
+        }
+
+        .res-card.security .icon-wrapper {
+            color: var(--accent-emerald);
+        }
+
+        .res-card h4 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: #ffffff;
+        }
+
+        .res-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* Footer */
+        footer {
+            padding: 3rem 5%;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            position: relative;
+            z-index: 5;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 480px) {
+            .hero h1 {
+                font-size: 2.4rem;
+            }
+            .hero p {
+                font-size: 1.05rem;
+            }
+            .portal-card {
+                padding: 2rem 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-glow"></div>
+    <div class="bg-glow-2"></div>
+
+    <!-- Header / Navigation -->
+    <nav>
+        <a href="#" class="logo">
+            <i class="fas fa-balance-scale"></i>
+            <span>Advier</span>
+        </a>
+        <div class="nav-buttons">
+            <a href="1.user_login.html" class="btn btn-outline">Sign In</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero">
+        <div class="hero-badge">SECURED BY JWT AUTHENTICATION</div>
+        <h1>Legal Consultations, <br><span>Secured & Simplified</span></h1>
+        <p>Advier connects individuals in need of legal counsel with qualified advocates. Consult securely online, share documents, book appointments, and chat in real-time.</p>
+    </header>
+
+    <!-- Portals / Portals Grid -->
+    <section class="portals-container">
+        <!-- Client Portal Card -->
+        <div class="portal-card client">
+            <i class="fas fa-user-tie main-icon"></i>
+            <h3>Client Portal</h3>
+            <p>Are you looking for legal assistance? Discover verified advocates, browse profiles by ratings and specialties, book consultations, and consult securely.</p>
+            <ul>
+                <li><i class="fas fa-check-circle"></i> Browse and filter verified advocates</li>
+                <li><i class="fas fa-check-circle"></i> Book instant consultations and upload files</li>
+                <li><i class="fas fa-check-circle"></i> Real-time secure chat with file exchange</li>
+                <li><i class="fas fa-check-circle"></i> Submit ratings and reviews for services</li>
+            </ul>
+            <a href="1.user_login.html?role=client" class="btn btn-outline">Enter Client Hub</a>
+        </div>
+
+        <!-- Lawyer Portal Card -->
+        <div class="portal-card lawyer">
+            <i class="fas fa-gavel main-icon"></i>
+            <h3>Advocate Portal</h3>
+            <p>Expand your legal practice. Display your qualifications, experience, and prioritized specialties. Receive appointment requests and consult securely.</p>
+            <ul>
+                <li><i class="fas fa-check-circle"></i> Showcase qualifications with verified Bar ID</li>
+                <li><i class="fas fa-check-circle"></i> Set up to 5 prioritized specialties</li>
+                <li><i class="fas fa-check-circle"></i> Manage client scheduling and view files</li>
+                <li><i class="fas fa-check-circle"></i> Chat securely, exchange documents, and review ratings</li>
+            </ul>
+            <a href="1.user_login.html?role=lawyer" class="btn btn-gold">Enter Advocate Hub</a>
+        </div>
+    </section>
+
+    <!-- Issue & Resolution Section -->
+    <section class="resolution-section">
+        <div class="section-header">
+            <h2>How Advier Works</h2>
+            <p>Bridging the gap between the public and legal practitioners through technology, security, and verification.</p>
+        </div>
+        
+        <div class="resolution-grid">
+            <!-- Gaps & Resolution 1: Trust -->
+            <div class="res-card trust">
+                <div class="icon-wrapper">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h4>Verified Professionals</h4>
+                <p><strong>The Issue:</strong> Finding a genuine, qualified legal practitioner online can be full of uncertainty.</p>
+                <p style="margin-top: 8px;"><strong>How We Resolve It:</strong> All advocates on Advier are required to provide their Bar Council Registration Number, which undergoes validation during registration. Clients can browse with full confidence.</p>
+            </div>
+
+            <!-- Gaps & Resolution 2: Scheduling -->
+            <div class="res-card schedule">
+                <div class="icon-wrapper">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <h4>Effortless Bookings</h4>
+                <p><strong>The Issue:</strong> Coordinating schedules, explaining cases, and sending background files via email is messy.</p>
+                <p style="margin-top: 8px;"><strong>How We Resolve It:</strong> Advier offers a structured calendar system. Clients book dates, state issues, and upload case documents directly. Advocates receive instant notifications and accept or reschedule instantly.</p>
+            </div>
+
+            <!-- Gaps & Resolution 3: Security -->
+            <div class="res-card security">
+                <div class="icon-wrapper">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <h4>Secure Communications</h4>
+                <p><strong>The Issue:</strong> Legal matters require confidentiality. Unencrypted channels risk exposing sensitive information.</p>
+                <p style="margin-top: 8px;"><strong>How We Resolve It:</strong> Communications, data retrieval, and chat rooms on Advier are sealed with JWT Token Security, preventing data breaches and unauthorized URL bypasses. Your cases remain strictly confidential.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 Advier. All rights reserved. Empowering justice, securing information.</p>
+    </footer>
+</body>
+</html>

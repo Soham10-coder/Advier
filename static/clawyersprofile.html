@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="auth.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Advocate Profile - Advier ⚖️</title>
@@ -102,6 +103,10 @@
                 <strong>Years of Experience</strong>
                 <p id="lawyer-experience">0 years</p>
             </div>
+            <div class="detail-item" id="lawyer-specializations-container" style="grid-column: 1 / -1; display: none;">
+                <strong>Areas of Specialization (by Priority)</strong>
+                <div id="lawyer-specializations-list" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;"></div>
+            </div>
             <div class="detail-item" style="grid-column: 1 / -1;">
                 <strong>Professional Bio & Achievements</strong>
                 <p id="lawyer-achievements">N/A</p>
@@ -173,8 +178,43 @@
         }
 
         document.getElementById('lawyer-name').textContent = `${data.firstName || ''} ${data.lastName || ''}`.trim() || 'Unregistered Advocate';
-        document.getElementById('lawyer-specialty').textContent = `${data.specialization || 'General Practice'} Specialist`;
-        document.getElementById('lawyer-experience').textContent = `${data.experience || 'N/A'} years`;
+        const specs = data.specializations;
+        const mainSpec = specs && specs.length > 0 ? specs[0] : (data.specialization || 'General Practice');
+        document.getElementById('lawyer-specialty').textContent = `${mainSpec} Specialist`;
+
+        const specsContainer = document.getElementById('lawyer-specializations-container');
+        const specsList = document.getElementById('lawyer-specializations-list');
+        specsList.innerHTML = '';
+        
+        if (specs && specs.length > 0) {
+            specsContainer.style.display = 'block';
+            specs.forEach((spec, index) => {
+                const badge = document.createElement('span');
+                badge.className = 'badge';
+                
+                let badgeStyle = 'display: inline-block; padding: 0.35rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 500; border: 1px solid ';
+                if (index === 0) {
+                    badgeStyle += 'rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.1); color: #10b981;';
+                    badge.innerHTML = '⭐ ' + spec;
+                } else if (index === 1) {
+                    badgeStyle += 'rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.1); color: #3b82f6;';
+                    badge.textContent = spec;
+                } else {
+                    badgeStyle += 'var(--border-color); background: white; color: var(--text-main);';
+                    badge.textContent = spec;
+                }
+                badge.style.cssText = badgeStyle;
+                specsList.appendChild(badge);
+            });
+        } else if (data.specialization) {
+            specsContainer.style.display = 'block';
+            const badge = document.createElement('span');
+            badge.style.cssText = 'display: inline-block; padding: 0.35rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 500; border: 1px solid var(--border-color); background: white; color: var(--text-main);';
+            badge.textContent = data.specialization;
+            specsList.appendChild(badge);
+        }
+        const exp = data.experience || 'N/A';
+        document.getElementById('lawyer-experience').textContent = exp.toLowerCase().includes('year') ? exp : exp + ' years';
         document.getElementById('lawyer-achievements').textContent = data.achievements || 'N/A';
 
         // Render average rating

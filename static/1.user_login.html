@@ -214,6 +214,7 @@
             const result = await response.json();
 
             if (response.ok) {
+                localStorage.setItem('token', result.token);
                 localStorage.setItem('userName', result.name);
                 localStorage.setItem('userEmail', result.email);
                 localStorage.setItem('role', result.role);

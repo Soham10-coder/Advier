@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="auth.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lawyer Dashboard - Advier ⚖️</title>
@@ -166,10 +167,10 @@
         const res = await fetch(`/api/lawyer/appointments?lawyerEmail=${encodeURIComponent(lawyerEmail)}`);
         const appointments = await res.json();
 
-        const today = new Date();
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         const upcomingAppointments = appointments.filter(app => {
-          const dateObj = new Date(app.date);
-          return dateObj >= today;
+          return app.date >= todayStr;
         }).slice(0, 5); // Limit to next 5
 
         const list = document.getElementById('appointments-list');
@@ -198,8 +199,7 @@
         }
 
         const pendingCount = appointments.filter(app => {
-          const dateObj = new Date(app.date);
-          return dateObj >= today && (app.status === 'pending' || app.status === 'Requested' || !app.status);
+          return app.date >= todayStr && (app.status === 'pending' || app.status === 'Requested' || !app.status);
         }).length;
         document.getElementById('pending-appointments-count').textContent = pendingCount;
       } catch (err) {

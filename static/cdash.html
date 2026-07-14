@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="auth.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Client Dashboard - Advier ⚖️</title>
@@ -144,10 +145,10 @@
         const res = await fetch(`/api/client/appointments?clientEmail=${encodeURIComponent(clientEmail)}`);
         const appointments = await res.json();
 
-        const today = new Date();
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         const upcomingAppointments = appointments.filter(app => {
-          const dateObj = new Date(app.date);
-          return dateObj >= today;
+          return app.date >= todayStr;
         }).slice(0, 3); // Limit to next 3
 
         const list = document.getElementById('appointments-list');

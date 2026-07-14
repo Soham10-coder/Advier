@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="auth.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Edit Profile - Advier ⚖️</title>
@@ -53,13 +54,41 @@
             <input type="hidden" id="email" name="email" />
 
             <div class="form-group">
-                <label for="specialization">Area of Specialization <span>*</span></label>
-                <input type="text" id="specialization" name="specialization" placeholder="e.g. Criminal Law, Corporate Law" required />
+                <label>Areas of Specialization (Add up to 5 in order of priority) <span>*</span></label>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <select id="specialization-selector" style="flex: 1; margin-bottom: 0;">
+                        <option value="">Choose Specialization...</option>
+                        <option value="Criminal Law">Criminal Law</option>
+                        <option value="Corporate & Business Law">Corporate & Business Law</option>
+                        <option value="Family & Divorce Law">Family & Divorce Law</option>
+                        <option value="Civil Litigation">Civil Litigation</option>
+                        <option value="Property & Real Estate Law">Property & Real Estate Law</option>
+                        <option value="Intellectual Property (IP) Law">Intellectual Property (IP) Law</option>
+                        <option value="Cyber & IT Law">Cyber & IT Law</option>
+                        <option value="Tax Law">Tax Law</option>
+                        <option value="Labor & Employment Law">Labor & Employment Law</option>
+                        <option value="Banking & Finance Law">Banking & Finance Law</option>
+                    </select>
+                    <button type="button" class="btn btn-primary" onclick="addSpecialization()" style="width: auto; padding: 0 1.5rem; margin-top: 0; min-height: 48px;">Add</button>
+                </div>
+                
+                <div id="specialization-list-container" style="background: var(--bg-light); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; min-height: 60px;">
+                    <div id="no-specialization-msg" style="color: var(--text-muted); font-size: 0.95rem; text-align: center; padding: 0.5rem 0;">No specializations added yet. Choose from above.</div>
+                    <ul id="prioritized-specialization-list" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
+                    </ul>
+                </div>
+                <input type="hidden" id="specialization" name="specialization" required />
             </div>
 
             <div class="form-group">
                 <label for="experience">Years of Experience <span>*</span></label>
-                <input type="number" id="experience" name="experience" placeholder="e.g. 10" min="0" required />
+                <select id="experience" name="experience" required>
+                    <option value="">Select Experience Range...</option>
+                    <option value="1-3 years">1-3 years</option>
+                    <option value="4-5 years">4-5 years</option>
+                    <option value="6-10 years">6-10 years</option>
+                    <option value="Above 10 years">Above 10 years</option>
+                </select>
             </div>
 
             <div class="form-group">
@@ -108,13 +137,73 @@
         setTimeout(() => { toast.style.animation = 'fadeOut 0.3s forwards'; setTimeout(() => toast.remove(), 300); }, 3000);
     }
 
-    window.onload = function () {
+    window.onload = async function () {
         const userName = localStorage.getItem('userName');
         const userEmail = localStorage.getItem('userEmail');
 
         if (userName && userEmail) {
             document.getElementById('name').value = userName;
             document.getElementById('email').value = userEmail;
+
+            try {
+                const res = await fetch(`/getProfile/${userEmail}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.specializations && Array.isArray(data.specializations)) {
+                        selectedSpecs = data.specializations;
+                    } else if (data.specialization) {
+                        selectedSpecs = data.specialization.split(',').map(s => s.trim()).filter(Boolean);
+                    }
+                    renderSpecializations();
+                    if (data.experience) {
+                        const select = document.getElementById('experience');
+                        let exists = false;
+                        const checkVal = data.experience.toString().trim();
+                        for (let i = 0; i < select.options.length; i++) {
+                            if (select.options[i].value === checkVal) { exists = true; break; }
+                        }
+                        if (!exists) {
+                            const opt = document.createElement('option');
+                            opt.value = checkVal;
+                            opt.textContent = checkVal + (isNaN(checkVal) ? "" : " years");
+                            select.appendChild(opt);
+                        }
+                        select.value = checkVal;
+                    }
+                    if (data.achievements) document.getElementById('achievements').value = data.achievements;
+                    
+                    if (data.profilePicUrl) {
+                        const preview = document.getElementById('profilePicPreview');
+                        const img = document.createElement('img');
+                        img.src = data.profilePicUrl;
+                        preview.appendChild(img);
+                    }
+                    if (data.certificationsUrls && data.certificationsUrls.length > 0) {
+                        const preview = document.getElementById('certificationPreview');
+                        data.certificationsUrls.forEach(url => {
+                            if(!url) return;
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.target = '_blank';
+                            link.textContent = url.split('/').pop() || 'Document';
+                            preview.appendChild(link);
+                        });
+                    }
+                    if (data.graduationCertificatesUrls && data.graduationCertificatesUrls.length > 0) {
+                        const preview = document.getElementById('graduationPreview');
+                        data.graduationCertificatesUrls.forEach(url => {
+                            if(!url) return;
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.target = '_blank';
+                            link.textContent = url.split('/').pop() || 'Document';
+                            preview.appendChild(link);
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error("Error loading existing profile details:", err);
+            }
         } else {
             showToast("User information missing. Please log in.", "error");
         }
@@ -173,6 +262,112 @@
             submitBtn.disabled = false;
         }
     });
+
+    let selectedSpecs = [];
+
+    function renderSpecializations() {
+        const listUl = document.getElementById('prioritized-specialization-list');
+        const emptyMsg = document.getElementById('no-specialization-msg');
+        const hiddenInput = document.getElementById('specialization');
+        
+        listUl.innerHTML = '';
+        
+        if (selectedSpecs.length === 0) {
+            emptyMsg.style.display = 'block';
+            hiddenInput.value = '';
+            hiddenInput.required = true;
+            return;
+        }
+        
+        emptyMsg.style.display = 'none';
+        hiddenInput.value = JSON.stringify(selectedSpecs);
+        hiddenInput.removeAttribute('required');
+        
+        selectedSpecs.forEach((spec, index) => {
+            const li = document.createElement('li');
+            li.style.display = 'flex';
+            li.style.alignItems = 'center';
+            li.style.justifyContent = 'space-between';
+            li.style.background = 'var(--bg-surface)';
+            li.style.padding = '0.6rem 1rem';
+            li.style.borderRadius = 'var(--radius-sm)';
+            li.style.border = '1px solid var(--border-color)';
+            li.style.boxShadow = 'var(--shadow-sm)';
+            
+            let badgeBg = 'var(--primary)';
+            let badgeLabel = `#${index + 1}`;
+            if (index === 0) {
+                badgeBg = '#10b981';
+                badgeLabel += ' (Primary)';
+            } else if (index === 1) {
+                badgeBg = '#3b82f6';
+            }
+            
+            li.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span class="spec-priority-badge" style="background: ${badgeBg}; color: white; padding: 2px 8px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;">${badgeLabel}</span>
+                    <span style="font-weight: 500; color: var(--text-main);">${spec}</span>
+                </div>
+                <div style="display: flex; gap: 5px; align-items: center;">
+                    <button type="button" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem; height: auto; min-height: auto; width: auto; margin: 0;" ${index === 0 ? 'disabled' : ''} onclick="moveSpecUp(${index})">▲</button>
+                    <button type="button" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem; height: auto; min-height: auto; width: auto; margin: 0;" ${index === selectedSpecs.length - 1 ? 'disabled' : ''} onclick="moveSpecDown(${index})">▼</button>
+                    <button type="button" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem; height: auto; min-height: auto; width: auto; margin: 0; color: var(--danger); border-color: var(--danger);" onclick="removeSpec(${index})">✕</button>
+                </div>
+            `;
+            listUl.appendChild(li);
+        });
+        
+        const selector = document.getElementById('specialization-selector');
+        for (let i = 0; i < selector.options.length; i++) {
+            const opt = selector.options[i];
+            if (opt.value && selectedSpecs.includes(opt.value)) {
+                opt.disabled = true;
+            } else {
+                opt.disabled = false;
+            }
+        }
+        selector.value = '';
+    }
+
+    function addSpecialization() {
+        const selector = document.getElementById('specialization-selector');
+        const spec = selector.value;
+        if (!spec) return;
+        
+        if (selectedSpecs.length >= 5) {
+            showToast("You can choose at most 5 specializations.", "error");
+            return;
+        }
+        
+        if (selectedSpecs.includes(spec)) {
+            showToast("Specialization already added.", "error");
+            return;
+        }
+        
+        selectedSpecs.push(spec);
+        renderSpecializations();
+    }
+
+    function removeSpec(index) {
+        selectedSpecs.splice(index, 1);
+        renderSpecializations();
+    }
+
+    function moveSpecUp(index) {
+        if (index === 0) return;
+        const temp = selectedSpecs[index];
+        selectedSpecs[index] = selectedSpecs[index - 1];
+        selectedSpecs[index - 1] = temp;
+        renderSpecializations();
+    }
+
+    function moveSpecDown(index) {
+        if (index === selectedSpecs.length - 1) return;
+        const temp = selectedSpecs[index];
+        selectedSpecs[index] = selectedSpecs[index + 1];
+        selectedSpecs[index + 1] = temp;
+        renderSpecializations();
+    }
   </script>
   <script src="sidebar.js"></script>
 </body>
