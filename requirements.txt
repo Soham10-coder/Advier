@@ -9,3 +9,4 @@ dnspython
 gunicorn
 gevent
 gevent-websocket
+PyJWT
